@@ -9,10 +9,25 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "start": "node dist/index.js"
   },
   "keywords": ["cli", "sharing", "markdown", "ai-context", "claude", "developer-tools"],
   "license": "MIT",
+  "author": "chirchip",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chirchip/glittery-pixel.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/chirchip/glittery-pixel#readme",
+  "bugs": "https://github.com/chirchip/glittery-pixel/issues",
+  "files": [
+    "dist/**/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "chalk": "^5.3.0",
     "commander": "^12.1.0",

@@ -9,7 +9,7 @@ const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
 const DEFAULT_CONFIG: GpConfig = {
   version: 1,
   auth: null,
-  relay_url: 'http://localhost:8080',
+  relay_url: process.env.GP_RELAY_URL || 'https://glittery-pixel.onrender.com',
   preferences: {
     default_save_dir: '.',
     auto_overwrite: false,
