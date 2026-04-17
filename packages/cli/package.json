@@ -1,6 +1,6 @@
 {
   "name": "glittery-pixel",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Share AI context files directly from your terminal",
   "type": "module",
   "bin": {
@@ -25,7 +25,8 @@
   "homepage": "https://github.com/chirchip/glittery-pixel#readme",
   "bugs": "https://github.com/chirchip/glittery-pixel/issues",
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "src/hooks/**/*"
   ],
   "engines": {
     "node": ">=18.0.0"

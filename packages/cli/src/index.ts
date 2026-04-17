@@ -8,6 +8,7 @@ import { addContactCommand, listContactsCommand, removeContactCommand } from './
 import { listenCommand } from './commands/listen.js';
 import { historyCommand } from './commands/history.js';
 import { configShowCommand, configSetCommand } from './commands/config.js';
+import { setupHooksCommand } from './commands/setup-hooks.js';
 
 const program = new Command();
 
@@ -108,5 +109,11 @@ config
   .argument('<key>', 'Config key')
   .argument('<value>', 'Config value')
   .action(configSetCommand);
+
+// Setup
+program
+  .command('setup-hooks')
+  .description('Install Claude Code hooks for real-time inbox notifications')
+  .action(setupHooksCommand);
 
 program.parse();
