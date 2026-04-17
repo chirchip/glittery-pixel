@@ -59,12 +59,6 @@ router.post('/', sendLimiter, validate(sendSchema), async (req, res) => {
     return;
   }
 
-  const ghUser = await verifyGitHubUsername(recipientUsername);
-  if (!ghUser) {
-    res.status(404).json({ error: `GitHub user @${recipientUsername} not found` });
-    return;
-  }
-
   try {
     const safeName = sanitizeFilename(filename);
 
@@ -73,6 +67,14 @@ router.post('/', sendLimiter, validate(sendSchema), async (req, res) => {
       .select('id')
       .eq('github_username', recipientUsername)
       .single();
+
+    if (!recipient) {
+      const ghUser = await verifyGitHubUsername(recipientUsername);
+      if (!ghUser) {
+        res.status(404).json({ error: `GitHub user @${recipientUsername} not found` });
+        return;
+      }
+    }
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
