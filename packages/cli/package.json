@@ -1,0 +1,31 @@
+{
+  "name": "glittery-pixel",
+  "version": "0.1.0",
+  "description": "Share AI context files directly from your terminal",
+  "type": "module",
+  "bin": {
+    "gp": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["cli", "sharing", "markdown", "ai-context", "claude", "developer-tools"],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "diff": "^7.0.0",
+    "open": "^10.1.0",
+    "ora": "^8.1.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/diff": "^6.0.0",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

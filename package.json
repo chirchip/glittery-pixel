@@ -1,0 +1,15 @@
+{
+  "name": "glittery-pixel-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/cli",
+    "packages/relay"
+  ],
+  "scripts": {
+    "dev:relay": "npm run dev -w packages/relay",
+    "dev:cli": "npm run dev -w packages/cli",
+    "build": "npm run build -w packages/relay && npm run build -w packages/cli",
+    "build:relay": "npm run build -w packages/relay",
+    "build:cli": "npm run build -w packages/cli"
+  }
+}
