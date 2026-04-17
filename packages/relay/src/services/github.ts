@@ -43,6 +43,7 @@ export async function getGitHubUser(accessToken: string): Promise<GitHubUser> {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'glittery-pixel-relay',
     },
   });
 
@@ -57,13 +58,11 @@ export async function verifyGitHubUsername(username: string): Promise<GitHubUser
   const response = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
     headers: {
       Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'glittery-pixel-relay',
     },
   });
 
-  if (response.status === 404) return null;
-  if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status}`);
-  }
+  if (!response.ok) return null;
 
   return response.json() as Promise<GitHubUser>;
 }

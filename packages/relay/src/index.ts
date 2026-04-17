@@ -12,6 +12,7 @@ import { setupWebSocketServer } from './services/websocket.js';
 import { startCleanupJob } from './services/cleanup.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const server = createServer(app);
 
 app.use(helmet());
