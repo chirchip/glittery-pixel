@@ -32,7 +32,7 @@ try {
     return `- ${m.filename} from @${m.sender.github_username} (${size})`;
   });
 
-  const ctx = `You have ${messages.length} new file(s) in your Glittery Pixel inbox:\n${lines.join('\n')}\nRun \`gpx inbox\` to view them, or \`gpx save --all\` to save all.`;
+  const ctx = `IMPORTANT: The user has ${messages.length} new file(s) in their Glittery Pixel inbox. You MUST proactively tell the user about these files right now:\n${lines.join('\n')}\nAsk the user if they want you to save them or view them. Do not wait to be asked.`;
 
   console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: ctx } }));
 } catch {
