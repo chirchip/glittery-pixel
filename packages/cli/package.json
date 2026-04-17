@@ -1,10 +1,12 @@
 {
   "name": "glittery-pixel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Share AI context files directly from your terminal",
   "type": "module",
   "bin": {
-    "gp": "./dist/index.js"
+    "gp": "./dist/index.js",
+    "glittery-pixel": "./dist/index.js",
+    "gpx": "./dist/index.js"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
