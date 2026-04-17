@@ -63,8 +63,11 @@ program
 program
   .command('dismiss')
   .description('Dismiss a pending file without saving')
-  .argument('<index>', 'File number from inbox, or --all')
-  .action(dismissCommand);
+  .argument('<index>', 'File number from inbox, or "all"')
+  .option('--all', 'Dismiss all pending files')
+  .action((index: string, options: { all?: boolean }) => {
+    dismissCommand(options.all ? '--all' : index);
+  });
 
 // Contacts
 const contacts = program
