@@ -34,7 +34,7 @@ try {
 
   const ctx = `You have ${messages.length} new file(s) in your Glittery Pixel inbox:\n${lines.join('\n')}\nRun \`gpx inbox\` to view them, or \`gpx save --all\` to save all.`;
 
-  console.log(JSON.stringify({ hookSpecificOutput: { additionalContext: ctx } }));
+  console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: ctx } }));
 } catch {
   process.exit(0);
 }

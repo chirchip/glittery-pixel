@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync, appendFileSync, existsSync, unlinkSync } from 'fs';
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
-import WebSocket from 'ws';
 
 const configPath = join(homedir(), '.config', 'gp', 'config.json');
 const pidPath = join(homedir(), '.config', 'gp', 'listener.pid');
-const incomingPath = join(homedir(), '.config', 'gp', 'incoming.jsonl');
+const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const incomingPath = join(projectDir, '.claude', 'incoming.jsonl');
 
 let config;
 try {
@@ -18,30 +18,48 @@ try {
 if (!config.auth?.token || !config.relay_url) process.exit(0);
 
 writeFileSync(pidPath, String(process.pid));
+mkdirSync(join(projectDir, '.claude'), { recursive: true });
 
-function connect() {
-  const wsUrl = config.relay_url.replace(/^http/, 'ws');
-  const ws = new WebSocket(`${wsUrl}/ws?token=${config.auth.token}`);
+const seenIds = new Set();
 
-  ws.on('message', (data) => {
-    try {
-      const msg = JSON.parse(data.toString());
-      if (msg.type === 'new_message' && msg.data) {
-        appendFileSync(incomingPath, JSON.stringify(msg.data) + '\n');
-      }
-    } catch {}
-  });
+async function poll() {
+  try {
+    const res = await fetch(`${config.relay_url}/messages/inbox`, {
+      headers: { Authorization: `Bearer ${config.auth.token}` },
+    });
 
-  ws.on('close', () => {
-    setTimeout(connect, 5000);
-  });
+    if (!res.ok) return;
 
-  ws.on('error', () => {
-    setTimeout(connect, 10000);
-  });
+    const { messages } = await res.json();
+    if (!messages || messages.length === 0) return;
+
+    const newMessages = messages.filter((m) => !seenIds.has(m.id));
+    if (newMessages.length === 0) return;
+
+    for (const m of newMessages) {
+      seenIds.add(m.id);
+    }
+
+    for (const m of messages) {
+      seenIds.add(m.id);
+    }
+
+    const lines = newMessages.map((m) =>
+      JSON.stringify({
+        from: m.sender.github_username,
+        filename: m.filename,
+        size_bytes: m.file_size_bytes,
+        note: m.note || null,
+        id: m.id,
+      })
+    );
+
+    appendFileSync(incomingPath, lines.join('\n') + '\n');
+  } catch {}
 }
 
-connect();
+await poll();
+setInterval(poll, 30_000);
 
 process.on('SIGTERM', () => {
   try {

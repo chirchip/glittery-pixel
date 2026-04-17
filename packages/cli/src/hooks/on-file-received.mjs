@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { homedir } from 'os';
 
-const incomingPath = join(homedir(), '.config', 'gp', 'incoming.jsonl');
+const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const incomingPath = join(projectDir, '.claude', 'incoming.jsonl');
 
 if (!existsSync(incomingPath)) process.exit(0);
 
@@ -38,5 +38,5 @@ const ctx =
   notifications.join('\n') +
   '\nRun `gpx inbox` to view, or ask me to save and read it.';
 
-console.log(JSON.stringify({ hookSpecificOutput: { additionalContext: ctx } }));
+console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "FileChanged", additionalContext: ctx } }));
 process.exit(2);
