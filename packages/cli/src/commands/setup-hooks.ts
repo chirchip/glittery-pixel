@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { isAuthenticated } from '../lib/config.js';
 import { success, error, info } from '../lib/display.js';
 
-const HOOK_FILES = ['check-inbox.mjs', 'ws-listener.mjs', 'on-file-received.mjs'];
+const HOOK_FILES = ['check-inbox.mjs'];
 
 function getHooksSourceDir(): string {
   const thisFile = fileURLToPath(import.meta.url);
@@ -20,77 +20,24 @@ function getClaudeSettingsPath(): string {
   return path.join(os.homedir(), '.claude', 'settings.json');
 }
 
-const GP_HOOKS_CONFIG = {
-  hooks: {
-    SessionStart: [
+function getGpHookEntry() {
+  const hookPath = path.join(os.homedir(), '.claude', 'hooks', 'check-inbox.mjs').replace(/\\/g, '/');
+  return {
+    matcher: '',
+    hooks: [
       {
-        hooks: [
-          {
-            type: 'command',
-            command: `node ${path.join(os.homedir(), '.claude', 'hooks', 'check-inbox.mjs').replace(/\\/g, '/')}`,
-            timeout: 10,
-          },
-          {
-            type: 'command',
-            command: `node ${path.join(os.homedir(), '.claude', 'hooks', 'ws-listener.mjs').replace(/\\/g, '/')} &`,
-            timeout: 5,
-          },
-        ],
+        type: 'command',
+        command: `node ${hookPath}`,
+        timeout: 10,
       },
     ],
-    FileChanged: [
-      {
-        matcher: 'incoming.jsonl',
-        hooks: [
-          {
-            type: 'command',
-            command: `node ${path.join(os.homedir(), '.claude', 'hooks', 'on-file-received.mjs').replace(/\\/g, '/')}`,
-            timeout: 5,
-          },
-        ],
-      },
-    ],
-    SessionEnd: [
-      {
-        hooks: [
-          {
-            type: 'command',
-            command: `node -e "const f=require('fs'),p=require('path').join(require('os').homedir(),'.config','gp','listener.pid');if(f.existsSync(p)){try{process.kill(+f.readFileSync(p,'utf8'))}catch{}f.unlinkSync(p)}"`,
-            timeout: 5,
-          },
-        ],
-      },
-    ],
-  },
-};
+  };
+}
 
-function deepMergeHooks(
-  existing: Record<string, unknown>,
-  incoming: Record<string, unknown>
-): Record<string, unknown> {
-  const result = { ...existing };
-
-  for (const [key, value] of Object.entries(incoming)) {
-    if (key === 'hooks' && typeof value === 'object' && value !== null) {
-      const existingHooks = (result.hooks as Record<string, unknown[]>) || {};
-      const incomingHooks = value as Record<string, unknown[]>;
-      const merged: Record<string, unknown[]> = { ...existingHooks };
-
-      for (const [event, entries] of Object.entries(incomingHooks)) {
-        if (!merged[event]) {
-          merged[event] = entries;
-        } else {
-          merged[event] = [...merged[event], ...entries];
-        }
-      }
-
-      result.hooks = merged;
-    } else {
-      result[key] = value;
-    }
-  }
-
-  return result;
+function isGpHook(entry: Record<string, unknown>): boolean {
+  const hooks = entry.hooks as Array<Record<string, unknown>> | undefined;
+  if (!hooks || !Array.isArray(hooks)) return false;
+  return hooks.some((h) => typeof h.command === 'string' && h.command.includes('check-inbox.mjs'));
 }
 
 export async function setupHooksCommand(): Promise<void> {
@@ -132,12 +79,20 @@ export async function setupHooksCommand(): Promise<void> {
     settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
   } catch {}
 
-  settings = deepMergeHooks(settings, GP_HOOKS_CONFIG);
+  const existingHooks = (settings.hooks as Record<string, unknown[]>) || {};
+
+  const sessionStart = (existingHooks.SessionStart as Array<Record<string, unknown>>) || [];
+  const filtered = sessionStart.filter((entry) => !isGpHook(entry));
+  filtered.push(getGpHookEntry());
+
+  existingHooks.SessionStart = filtered;
+  settings.hooks = existingHooks;
+
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
   info('  Updated ~/.claude/settings.json');
 
   console.log();
   success('  Claude Code hooks installed!');
-  console.log('  New sessions will auto-check your inbox and notify you in real-time.');
+  console.log('  Your inbox will be checked each time Claude Code starts.');
   console.log();
 }
