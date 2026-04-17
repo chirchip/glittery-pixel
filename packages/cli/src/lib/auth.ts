@@ -20,10 +20,6 @@ interface AuthCallbackResponse {
 }
 
 export async function performOAuthFlow(): Promise<AuthCallbackResponse> {
-  const { auth_url, state } = await apiRequest<AuthInitResponse>('/auth/init', {
-    requireAuth: false,
-  });
-
   return new Promise((resolve, reject) => {
     const server = http.createServer(async (req, res) => {
       const url = new URL(req.url || '', `http://localhost`);
@@ -37,11 +33,11 @@ export async function performOAuthFlow(): Promise<AuthCallbackResponse> {
       const code = url.searchParams.get('code');
       const returnedState = url.searchParams.get('state');
 
-      if (!code || returnedState !== state) {
+      if (!code || !returnedState) {
         res.writeHead(400);
-        res.end('Authentication failed: invalid state');
+        res.end('Authentication failed: missing code or state');
         server.close();
-        reject(new Error('Invalid OAuth state'));
+        reject(new Error('Invalid OAuth callback'));
         return;
       }
 
@@ -60,7 +56,7 @@ export async function performOAuthFlow(): Promise<AuthCallbackResponse> {
       try {
         const result = await apiRequest<AuthCallbackResponse>('/auth/callback', {
           method: 'POST',
-          body: { code, state },
+          body: { code, state: returnedState },
           requireAuth: false,
         });
 
@@ -83,7 +79,7 @@ export async function performOAuthFlow(): Promise<AuthCallbackResponse> {
       }
     });
 
-    server.listen(0, '127.0.0.1', () => {
+    server.listen(0, '127.0.0.1', async () => {
       const addr = server.address();
       if (!addr || typeof addr === 'string') {
         reject(new Error('Failed to start local server'));
@@ -91,12 +87,21 @@ export async function performOAuthFlow(): Promise<AuthCallbackResponse> {
       }
 
       const port = addr.port;
-      const callbackUrl = `http://localhost:${port}/callback`;
-      const fullAuthUrl = `${auth_url}&redirect_uri=${encodeURIComponent(callbackUrl)}`;
+      const cliCallback = `http://localhost:${port}/callback`;
 
-      open(fullAuthUrl).catch(() => {
-        console.log(`\nOpen this URL in your browser:\n${fullAuthUrl}\n`);
-      });
+      try {
+        const { auth_url } = await apiRequest<AuthInitResponse>(
+          `/auth/init?cli_callback=${encodeURIComponent(cliCallback)}`,
+          { requireAuth: false }
+        );
+
+        open(auth_url).catch(() => {
+          console.log(`\nOpen this URL in your browser:\n${auth_url}\n`);
+        });
+      } catch (err) {
+        server.close();
+        reject(err);
+      }
     });
 
     setTimeout(() => {

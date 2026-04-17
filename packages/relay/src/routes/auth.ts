@@ -11,7 +11,7 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
-const pendingStates = new Map<string, { createdAt: number }>();
+const pendingStates = new Map<string, { createdAt: number; cliCallback?: string }>();
 
 setInterval(() => {
   const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
@@ -20,16 +20,39 @@ setInterval(() => {
   }
 }, 60_000);
 
-router.get('/init', authLimiter, (_req, res) => {
+router.get('/init', authLimiter, (req, res) => {
   const state = crypto.randomBytes(32).toString('hex');
-  pendingStates.set(state, { createdAt: Date.now() });
+  const cliCallback = req.query.cli_callback as string | undefined;
+  pendingStates.set(state, { createdAt: Date.now(), cliCallback });
 
   const authUrl = new URL('https://github.com/login/oauth/authorize');
   authUrl.searchParams.set('client_id', config.GITHUB_CLIENT_ID);
   authUrl.searchParams.set('scope', 'read:user');
   authUrl.searchParams.set('state', state);
+  authUrl.searchParams.set('redirect_uri', `${config.RELAY_URL}/auth/github/callback`);
 
   res.json({ auth_url: authUrl.toString(), state });
+});
+
+router.get('/github/callback', authLimiter, (req, res) => {
+  const code = req.query.code as string;
+  const state = req.query.state as string;
+
+  if (!code || !state || !pendingStates.has(state)) {
+    res.status(400).send('Invalid or expired authentication request.');
+    return;
+  }
+
+  const { cliCallback } = pendingStates.get(state)!;
+  if (!cliCallback) {
+    res.status(400).send('Missing CLI callback URL.');
+    return;
+  }
+
+  const redirectUrl = new URL(cliCallback);
+  redirectUrl.searchParams.set('code', code);
+  redirectUrl.searchParams.set('state', state);
+  res.redirect(redirectUrl.toString());
 });
 
 const callbackSchema = z.object({
